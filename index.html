@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Google Maps: Mininet</title>
+    <script src="js/apiCalls.js"></script>  <!-- api calls & treatment -->
+    <script type="text/javascript" src="temp/data.json"></script> <!-- geojson -->
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <!--------------------------------------------------------------------------------------------------------->
+    <!--------------------------------------------- CSS ------------------------------------------------------->
+    <!--------------------------------------------------------------------------------------------------------->
+    <style>
+	#map {
+		 height: 100%;
+		 position: relative;
+	}
+	html, body {
+		 height: 75%;
+		 margin: 0;
+		 padding: 0;
+	}  
+	/*css table des flux*/
+	table {	 
+		 border-style:inset; 
+		 width: 100%;
+		 border-color:black;
+		 border-width:1px;
+                 border-collapse: collapse; 
+                 margin:auto;
+		}
+
+		tr:nth-child(even) {background-color: #f2f2f2;}
+	
+		td { 	 
+		 border-width:1px;
+		 border-style:inset; 
+		 border-color:black;
+		 font-family:sans-serif;
+                 font-size:80%;
+                 border:1px solid #6495ed;
+                 padding:5px;
+                 text-align:left;
+ 	}
+	/*buttons: for ping and pingall*/
+	.button {
+		background-color: #4CAF50; /* Green */
+		border: none;
+		color: white;
+		padding: 4px 24px;
+		text-align: center;
+		text-decoration: none;
+		/*display: inline-block;*/
+		font-size: 16px;
+		float: right;
+		margin: 5px;
+	} 
+	/*text area: for ping and pingall*/
+	.textArea {
+		float:right;
+		height:26px;
+		width:144px;
+		/*display:inline-block;*/
+		resize:none;
+		font-size:18px;
+		margin: 5px;
+	}
+	/*text area: ping count and iperf protocol*/
+	.textArea2 {
+		float:right;
+		height:26px;
+		width:250px;
+		/*display:inline-block;*/
+		resize:none;
+		font-size:18px;
+		margin: 5px;
+	}
+	/*sflow checkbox (hide/show)*/
+	.labelSflow {
+		background-color: #FFFFFF; /* white */
+		border: none;
+		color: black;
+		text-align: center;
+		text-decoration: none;
+		display: inline-block;
+		font-size: 20px;
+		float: right;
+		/*clear:both;*/
+		padding-left: 0.2em;
+		padding-right: 1em;
+		vertical-align: -5px;
+		/*margin: 5px;*/
+	}  
+	/*sflow menu*/
+	.sflowMenu{
+		background-color: #4CAF50;
+		color: white;
+		border: none;
+		padding: 4px 10.5px;
+		text-align: center;
+		float:right;
+		clear:both;
+		margin: 5px;
+	}
+    </style>
+  </head>
+ 
+  <body>     
+  <!--------------------------------------------------------------------------------------------------------->
+  <!--------------------------------------- Map treatement -------------------------------------------------->
+  <!--------------------------------------------------------------------------------------------------------->
+    <div id="map"></div>    <!--"map" represents the map area-->
+    <script>
+	function initMap() {
+	
+		/*
+		load the map
+		*/
+		var barycentre = calculerBarycentreDesSwitch(data);
+		map = new google.maps.Map(document.getElementById('map'), {
+			zoom: 4,
+			center: {lat: barycentre.y, lng: barycentre.x},
+		});
+		
+		/*
+		load Geojson data
+		*/
+		map.data.loadGeoJson('temp/out.json');
+		
+		/*
+		set icon and link color		
+		*/
+		map.data.setStyle(function(feature) {
+			  var color = 'green';
+			  if (feature.getProperty('isColorful')) {
+			    	color = feature.getProperty('color');
+			  }
+			  return ({
+			    	icon: 'images/image3688.png',
+				fillColor: color,
+			    	strokeColor: color,
+			    	strokeWeight: 2
+			  });
+		});
+
+		// change line stroke when click on link
+		map.data.addListener('mouseover', function(event) {
+	  	  	map.data.overrideStyle(event.feature, {strokeWeight: 5});
+		});
+
+		// change line stroke when click on link
+		map.data.addListener('mouseout', function(event) {
+		  	map.data.overrideStyle(event.feature, {strokeWeight: 3});
+		});
+
+			
+		/*
+		left click event on marker & links (info window)
+		*/
+		var infoClicGauche = new google.maps.InfoWindow();
+		map.data.addListener('click', function(event) {
+			/*Links*/
+			if (event.feature.getGeometry().getType() === "LineString") {	
+				position: event.feature.getGeometry().getAt() //center the map
+				/*extract name property from json*/
+				link1 = "s"+event.feature.getProperty("name").toString().split('-')[0];
+				link2 = "s"+event.feature.getProperty("name").toString().split('-')[1];
+				link = link1+"-"+link2	//ex: s1-s7
+				/*call api to search for interfaces names*/
+				var file= apiGetFile()				//call api, gives file elements
+				var linkSwitch= apiFindLinksBetweenParsing(file,link)	//call api, gives ex:[ "s10-eth2", "s14-eth2" ]
+				var myHTML ="Lien: " + linkSwitch[0] +" "+ linkSwitch[1]					
+				infowindow.setContent(myHTML);
+				infowindow.setPosition(event.latLng);
+				infowindow.open(map);
+			/*Switchs*/	
+			} else if (event.feature.getGeometry().getType() === "Point") {	
+				position: event.feature.getGeometry().get() //center the map
+				cityName = event.feature.getProperty("name").split('_')[0]; 	//extract dpid from switchName (ex: switchName=madrid_13, dpid=13)
+				switchDPID = event.feature.getProperty("name").split('_')[1];  //extract city name from switchName (ex: switchName=madrid_13, city=madrid)
+				//console.log(switchDPID)		
+				var myHTML ='Ville: '+cityName +'<br>'+'dpid: '+switchDPID
+				infowindow.setContent(myHTML);
+				infowindow.setPosition(event.latLng);
+				infowindow.open(map);	
+			}									
+		});
+		
+		
+		/*
+		right click event on marker & links (dropdown menu)
+		*/
+		var infowindow = new google.maps.InfoWindow();
+		map.data.addListener('rightclick', function(event) {
+			/* links */
+			if (event.feature.getGeometry().getType() === "LineString") {
+				var myHTML ='<select name="myDropdown" onchange="listQ(this);">'+
+				'<br><option selected="selected">--select--</option></br>'+
+				'<br><option value="up">Up</option></br>'+
+				'<br><option value="down">Down</option></br>'+
+			  	'</div>';	
+				infowindow.setContent(myHTML);
+				infowindow.setPosition(event.latLng);
+				infowindow.open(map);
+			
+				window.listQ = function(e){ //called when element is selected from dropdown menu
+					position: event.feature.getGeometry().getAt() //center the map
+					/*extract name property from json*/
+					link1 = "s"+event.feature.getProperty("name").toString().split('-')[0];
+					link2 = "s"+event.feature.getProperty("name").toString().split('-')[1];
+					link = link1+"-"+link2	//ex: s10-s7
+					/*call api to search for interfaces names*/
+					var file= apiGetFile()					//call api, gives file elements
+					var linkSwitch= apiFindLinksBetweenParsing(file,link)	//call api, gives ex:[ "s10-eth2", "s14-eth2" ]
+					/*extract dpid*/
+					dpid0=linkSwitch[0].split('-')[0].slice(1,3)	//ex: 10
+					dpid1=linkSwitch[1].split('-')[0].slice(1,3)	//ex: 14
+					switch(e.value) {
+					    case "up":
+						apiUPlinks1(linkSwitch[0],dpid0)
+						apiUPlinks2(linkSwitch[1],dpid1)
+						map.data.overrideStyle(event.feature, { strokeColor:'green'});
+						break;
+					    case "down":	
+						apiDOWNlinks1(linkSwitch[0],dpid0)
+						apiDOWNlinks2(linkSwitch[1],dpid1)
+						map.data.overrideStyle(event.feature, { strokeColor:'red'});
+						break;  
+					    default:
+						break;
+					} 			 		 
+				}			
+		        /* switches */
+			var switchIsUp = true
+			} else if (event.feature.getGeometry().getType() === "Point") {
+				var myHTML ='<select name="myDropdown" onchange="listQ(this);">'+
+				'<br><option selected="selected">--select--</option></br>'+
+				'<br><option value="stats">Statistiques globales</option></br>'+
+				'<br><option value="interfacesSwitch">Interfaces du switch</option></br>'+
+				'<br><option value="interfacesHost">Interfaces de l\'hote</option></br>'+
+				'<br><option value="mac">Table MAC de l\'hote</option></br>'+
+				'<br><option value="flowsMn">Table de flux</option></br>'+
+				'<br><option value="sflow">Graphe sFlow</option></br>'+
+				'<br><option value="supFlows">Supprimer la table de flux</option></br>'+
+				'<br><option value="up">Up</option></br>'+
+				'<br><option value="down">Down</option></br>'+
+			  	'</div>';	
+				infowindow.setContent(myHTML);
+				infowindow.setPosition(event.latLng);
+				infowindow.open(map);
+			
+				window.listQ = function(e){ //called when element is selected from dropdown menu
+					 //first extract switch name and dpid
+					 switchName = event.feature.getProperty("name"); //switch name (ex: Madrid_13)
+					 //alert(cityName)
+					 var dpid = switchName.split('_')[1]; //extract dpid from switchName (ex: switchName=madrid_13, dpid=13)
+					 var city = switchName.split('_')[0]; //extract city name from switchName (ex: switchName=madrid_13, city=madrid)
+					 console.log("dpid = "+dpid);
+					 console.log("city = "+city);
+					 //then dispatch to the apropriate api
+					 switch(e.value) {
+					    case "stats":
+						apiStats(dpid,city)  //get switch statistics
+						break;
+					    case "interfacesSwitch":
+					    	apiInterfacesSwitch(dpid,city)  //get switch interfaces
+					    	break;
+					    case "interfacesHost":
+					    	apiInterfacesHost(dpid,city)  //get host interfaces
+					    	break;		
+					    case "mac":
+						apiMacHost(dpid,city)  //get host interfaces
+						break;
+					    case "flowsMn":
+					    	apiFlowMininet(dpid,city)  //get switch flow table (mininet api, text output)
+					    	break;
+					    case "sflow":
+					    	apiSflowSolo(dpid,city)  //get sflow graph
+					    	break;
+					    case "supFlows":
+	  					if (confirm("Vous désirez vraiment supprimer la table de flux?")) {
+						    	apiSupFlows(dpid,city)	//delete switch flow table
+							break;	
+	 					}
+	 					else {
+						 	break;
+						}
+					    case "up":
+						apiUpSwitch(dpid,city)	//up the switch
+						map.data.overrideStyle(event.feature, { icon: 'images/image3688.png'});
+						break;
+					    case "down":
+					    	apiDownSwitch(dpid,city) //down the switch
+						map.data.overrideStyle(event.feature, { icon: 'images/image3690.png'});
+					    	break;
+					    default:
+						break;
+					} 			 		 
+				}										
+			}								
+		});					 	 	
+	} 
+    </script>
+    
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDLWhbic_Uo3r_5sG9Ub9o7dm_3Zol1pE&callback=initMap">
+    </script>
+    
+    
+  <!--------------------------------------------------------------------------------------------------------->
+  <!------------------------------------- data printing zone ------------------------------------------------>
+  <!--------------------------------------------------------------------------------------------------------->
+  
+  <!------------------------------------------------------->
+  <!--------------- ping/pingall/iperf --------------------> 
+  <!------------------------------------------------------->
+  <input  type="button" onclick="iperf()" value="Iperf" class="button"> 
+  <input  type="button" onclick="pingAll()" value="Ping all" class="button"> 
+  <input  type="button" onclick="ping()" value="Ping" class="button"> 
+   
+  <textarea id="countOrProt" class="textArea2" placeholder="ping count/iperf prot" autocomplete=off ></textarea>
+  <textarea id="ping1" class="textArea"	placeholder="Vers.." autocomplete=off ></textarea>
+  <textarea id="ping2" class="textArea"	placeholder="De.." autocomplete=off ></textarea>
+     
+  <script> 
+  	function ping() {
+		var host1 = document.getElementById("ping1").value;
+		var host2 = document.getElementById("ping2").value;
+		var number = parseInt(document.getElementById("countOrProt").value); //parse to int
+		//first: test if fields are not empty
+		if (host1.length && host2.length) {
+			if ( !(arrayOfHosts.includes("h_"+host1)) ){	
+				document.getElementById("printSpace").innerHTML = "L'hote "+host1+" n'existe pas...";
+				return;	//exit
+			}
+			if ( !(arrayOfHosts.includes("h_"+host2)) ){	
+				document.getElementById("printSpace").innerHTML = "L'hote "+host2+" n'existe pas...";
+				return;
+			}
+			if(!(typeof number==='number' && number > 0 && (number%1)===0)) { 	
+				document.getElementById("printSpace").innerHTML = "'ping count' doit etre un entier positif...";
+				return;
+			}
+			apiPing(host1,host2,number)	//then execute ping 
+			document.getElementById("printSpace").innerHTML = "Ping en cours....";
+		}
+		else {
+			document.getElementById("printSpace").innerHTML = "Veuillez bien remplir les champs....";
+		}
+	}
+	
+	function pingAll() {
+		apiPingAll()  //call pingall api
+		document.getElementById("printSpace").innerHTML = "Pingall en cours....";
+	}
+	
+	function iperf() {
+		var host1 = document.getElementById("ping1").value;
+		var host2 = document.getElementById("ping2").value;
+		var prot  = document.getElementById("countOrProt").value.toUpperCase(); //should be TCP or UDP
+		//first: test if fields are not empty
+		if (host1.length && host2.length && prot.length) {
+			if ( !(arrayOfHosts.includes("h_"+host1)) ){	
+				document.getElementById("printSpace").innerHTML = "L'hote "+host1+" n'existe pas...";
+				return;	//exit
+			}
+			if ( !(arrayOfHosts.includes("h_"+host2)) ){	
+				document.getElementById("printSpace").innerHTML = "L'hote "+host2+" n'existe pas...";
+				return;
+			}
+			if ( !(prot=='TCP' || prot=='UDP' )){	
+				document.getElementById("printSpace").innerHTML = "Le champ protocole doit etre udp ou tcp...";
+				return;
+			}
+			apiIperf(host1,host2,prot)	//then execute iperf
+			document.getElementById("printSpace").innerHTML = "Iperf: test "+prot+" de bande passante entre h_"+host2+" et h_"+host1+"...";
+		}
+		else {
+			document.getElementById("printSpace").innerHTML = "Veuillez bien remplir les champs....";
+		}
+	}	
+  </script>
+   
+  <!------------------------------------------------------->
+  <!-------------------- sFlow menu -----------------------> 
+  <!------------------------------------------------------->
+  <select id="sflowSelect" onchange="sflowSelect()" autocomplete="off" class="sflowMenu">
+  	<option value="all">--select an sFlow graphs--
+	  <option value="Traffic">Graphe 1
+	  <option value="Topologie">Graphe 2
+  </select>
+  <p id="demo"></p>
+  
+  <script> 
+	  function sflowSelect() {
+	    var choice = document.getElementById("sflowSelect").value;
+	    switch(choice) {
+		    case "Traffic":
+	    		apiSflowTraffic()	//show sflow traffics
+			break;
+		    case "Topologie":
+	    		apiSflowTopologie()	//show sflow topologie
+		    	break;
+		    default:
+			break;
+	     } 		  	    	   
+	  }
+  </script> 
+  
+  <!------------------------------------------------------->
+  <!----------------- show/hide sFlow ---------------------> 
+  <!------------------------------------------------------->
+  <label for="sflowCheck" class="labelSflow">sFlow</label>
+  <input id="sflowCheck" type="checkbox" onclick="showHide(this.value)" checked="checked" autocomplete="off" class="labelSflow"/>  
+  <script>  
+  	/* show/hide sflow DIV based on the checkbox*/
+	function showHide(value) {
+		if (document.getElementById('sflowCheck').checked) {
+			if (document.getElementById("sFlowTopologie")){
+				document.getElementById("sFlowTopologie").style.visibility = "visible";
+			}
+			else {
+				document.getElementById("sFlowTraffic").style.visibility = "visible";	
+			}	
+		}
+		else {
+			if (document.getElementById("sFlowTopologie")){
+				document.getElementById("sFlowTopologie").style.visibility = "hidden";
+			}
+			else {
+				document.getElementById("sFlowTraffic").style.visibility = "hidden";	
+			}
+		}		
+	}
+  </script>
+  	
+  <!------------------------------------------------------->
+  <!---------------- Welcome treatement -------------------> 
+  <!------------------------------------------------------->
+  <script>
+	/* this function is called every time page is refreshed, it:
+	 * print some useful information 
+	 * get a list of hosts and switchs
+	 * get ip adress of hosts 
+	 */
+	function welcome() {
+		apiWelcome1()		//get ovs version
+		apiWelcome3()		//get mininet version
+		apiWelcome2()		//get switches and hosts
+		apiSflowTopologie()	//show sflow graphs
+		apiSflowTraffic()	//show sflow graphs
+		apiGetFile()		//get file containing links between switches
+        }
+        window.onload = welcome;      
+  </script>
+  
+  
+  <!------------------------------------------------------->
+  <!----------------- div declarations--------------------->
+  <!------------------------------------------------------->
+  <div id="printSpace"></div>
+  <br></br>
+  <div id="printSflow"></div>     
+  </body>
+</html>
