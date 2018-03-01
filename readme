@@ -1,20 +1,22 @@
 Version: 4.16
 
-# IMPORTANT
+IMPORTANT
+======
 The software you are going to play with, use several other programs.
 You must check or apply the following Prerequisites.
 
-# Prerequisites
+Prerequisites
+======
 
-## OS:
--------------------------------------------------------------------------------------------
+OS:
+------
 The software has been tested on Ubuntu 16.04.
 From now, it doesn't work on Ubuntu 17 because of problem OVSwitch compatibility independant to our software.
 So, use Ubuntu 16.04 in a VM with NAT access for example. Internet must be available for reaching google maps servers.
 
 
-## MININET:
---------------------------------------------------------------------------------------
+MININET:
+------
 Mininet is the network emulator
 The software has been tested with Mininet version 2.2.2
 
@@ -28,9 +30,8 @@ $ cd ..
 $ mininet/util/install.sh -a
 
 
-
-## RYU:
-------------------------------------------------------------------------------------------
+RYU:
+------
 RYU is the SDN controller
 
 git clone git://github.com/osrg/ryu.git
@@ -38,44 +39,40 @@ cd ryu
 python ./setup.py install
 
 
-
-## Bottle server
----------------------------------------------------------------------------------
+Bottle server
+------
 Bottle is used by Mininet REST API.
 $ pip install bottle
 
 
-
-## Upgrade Requests python module
---------------------------------------------------------------------
+Upgrade Requests python module
+------
 pip install --upgrade requests
 
 
-
-## Java
---------------------------------------------------------------------
+Java
+------
 sudo apt-get install openjdk-8-jdk openjdk-8-doc 
 
 
-
-## Firefox Addon
----------------------------------------------------------------------------------
+Firefox Addon
+------
 This addon is only useful for interaction with RYU API because it does not include CORS.
 Install this addon : https://addons.mozilla.org/fr/firefox/addon/cors-everywhere/
 ->Turn it to green
 
 
 
-# RUN IT
-
+RUN IT
+======
 In the software directory (important!!), within sudo privilege:
 $ python run.py BTEurope.graphml
 
 in another terminal:
 $ firefox index.html
 
-# CLOSE IT 
-
+CLOSE IT 
+======
 Traditional ctrl+c kill the software.
 To make sure that everything is closed, in the software directory (important!!):
 $ python scripts/close.py
