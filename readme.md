@@ -22,38 +22,43 @@ The software has been tested with Mininet version 2.2.2
 
 A good way to install Mininet:
 In a home directory (within sudo privilege $):
+~~~~
 $ git clone git://github.com/mininet/mininet
 $ cd mininet
 $ git tag  # list available versions
 $ git checkout -b 2.2.2 2.2.2  # or whatever version you wish to install
 $ cd ..
 $ mininet/util/install.sh -a
+~~~~
 
 
 RYU:
 ------
 RYU is the SDN controller
-
+~~~~
 git clone git://github.com/osrg/ryu.git
 cd ryu
 python ./setup.py install
-
+~~~~
 
 Bottle server
 ------
 Bottle is used by Mininet REST API.
+~~~~
 $ pip install bottle
-
+~~~~
 
 Upgrade Requests python module
 ------
+~~~~
 pip install --upgrade requests
-
+~~~~
 
 Java
 ------
+~~~~
 sudo apt-get install openjdk-8-jdk openjdk-8-doc 
-
+~~~~
 
 Firefox Addon
 ------
@@ -66,13 +71,18 @@ Install this addon : https://addons.mozilla.org/fr/firefox/addon/cors-everywhere
 RUN IT
 ======
 In the software directory (important!!), within sudo privilege:
+~~~~
 $ python run.py BTEurope.graphml
-
+~~~~
 in another terminal:
+~~~~
 $ firefox index.html
+~~~~
 
 CLOSE IT 
 ======
 Traditional ctrl+c kill the software.
 To make sure that everything is closed, in the software directory (important!!):
+~~~~
 $ python scripts/close.py
+~~~~
