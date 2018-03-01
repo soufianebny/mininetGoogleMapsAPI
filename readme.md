@@ -11,14 +11,14 @@ Prerequisites
 OS:
 ------
 The software has been tested on Ubuntu 16.04.
-From now, it doesn't work on Ubuntu 17 because of problem OVSwitch compatibility independant to our software.
+From now, it doesn't work on Ubuntu 17 because of an OVSwitch problem compatibility.
 So, use Ubuntu 16.04 in a VM with NAT access for example. Internet must be available for reaching google maps servers.
 
 
 MININET:
 ------
 Mininet is the network emulator
-The software has been tested with Mininet version 2.2.2
+This software has been tested with Mininet version 2.2.2
 
 A good way to install Mininet:
 In a home directory (within sudo privilege $):
@@ -56,14 +56,15 @@ pip install --upgrade requests
 
 Java
 ------
+Java is used by sFlow
 ~~~~
 sudo apt-get install openjdk-8-jdk openjdk-8-doc 
 ~~~~
 
 Firefox Addon
 ------
-This addon is only useful for interaction with RYU API because it does not include CORS.
-Install this addon : https://addons.mozilla.org/fr/firefox/addon/cors-everywhere/
+This addon activate CORS in the browser.
+Install it from here : https://addons.mozilla.org/fr/firefox/addon/cors-everywhere/
 ->Turn it to green
 
 
